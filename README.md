@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/367627429.svg)](https://zenodo.org/badge/latestdoi/367627429)
+
 # Reconstruction of 3D Shower Structures for Neutrino Experiments
 
 ### Authors: [[V. Belavin](https://gitlab.com/SchattenGenie)], [E. Trofimova] (etrofimova@hse.ru), [A. Ustyuzhanin]
