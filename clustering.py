@@ -440,6 +440,8 @@ def calc_clustering_metrics(clusterized_bricks, experiment, energy_true_file, en
 @click.option('--baseline', type=bool, default=False)
 @click.option('--hidden_dim', type=int, default=32)
 @click.option('--output_dim', type=int, default=32)
+@click.option('--index_0', type=int, default=32) #choose the part of the dataset
+@click.option('--index_1', type=int, default=32) #choose the part of the dataset
 @click.option('--num_layers_emulsion', type=int, default=3)
 @click.option('--num_layers_edge_conv', type=int, default=5)
 @click.option('--graph_embedder', type=str, default='GraphNN_KNN_v1')
@@ -468,7 +470,9 @@ def main(
         edge_classifier='EdgeClassifier_v1',
         baseline=False,
         graph_embedder_weights='GraphNN_KNN_v1', 
-        edge_classifier_weights='EdgeClassifier_v1'
+        edge_classifier_weights='EdgeClassifier_v1',
+        index_0 = 36,
+        index_1 = 71
 ):
     experiment = Experiment(project_name=project_name, workspace=workspace, api_key = 'abUSnAytqEzSzLOxNLP1ohibs')
     #, offline_directory="/home/vbelavin/comet_ml_offline")
@@ -476,7 +480,7 @@ def main(
     showers = torch.load(datafile)
 ############
     print(len(showers))
-    showers = showers[:36]
+    showers = showers[index_0:index_1]
 ###########
     input_dim = showers[0].x.shape[1]
     edge_dim = showers[0].edge_features.shape[1]
