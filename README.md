@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/367627429.svg)](https://zenodo.org/badge/latestdoi/367627429)
+[![DOI](https://zenodo.org/badge/367627429.svg)](https://zenodo.org/badge/latestdoi/367627429) 
 
 # Reconstruction of 3D Shower Structures for Neutrino Experiments
 
