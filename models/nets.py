@@ -17,7 +17,14 @@ import numpy as np
 
 from torch_geometric.nn.inits import reset
 
+from typing import Callable, Union, Optional
+from torch_geometric.typing import OptTensor, PairTensor, PairOptTensor, Adj
+from torch import Tensor
+
 RESIDUALS = False
+
+from torch_geometric.nn.conv import MessagePassing
+
 
 
 def extract_subgraph(h, adj, edge_features, order):
@@ -57,6 +64,47 @@ class EdgeConv_new(MessagePassing):
     def __repr__(self):
         return '{}(nn={})'.format(self.__class__.__name__, self.nn)      
 
+class EdgeConvWithEdgeAttribute(MessagePassing):
+    r"""The edge convolutional operator from the `"Dynamic Graph CNN for
+    Learning on Point Clouds" <https://arxiv.org/abs/1801.07829>`_ paper
+
+    .. math::
+        \mathbf{x}^{\prime}_i = \sum_{j \in \mathcal{N}(i)}
+        h_{\mathbf{\Theta}}(\mathbf{x}_i \, \Vert \,
+        \mathbf{x}_j - \mathbf{x}_i),
+
+    where :math:`h_{\mathbf{\Theta}}` denotes a neural network, *.i.e.* a MLP.
+
+    Args:
+        nn (torch.nn.Module): A neural network :math:`h_{\mathbf{\Theta}}` that
+            maps pair-wise concatenated node features :obj:`x` of shape
+            :obj:`[-1, 2 * in_channels]` to shape :obj:`[-1, out_channels]`,
+            *e.g.*, defined by :class:`torch.nn.Sequential`.
+        aggr (string, optional): The aggregation scheme to use
+            (:obj:`"add"`, :obj:`"mean"`, :obj:`"max"`).
+            (default: :obj:`"max"`)
+        **kwargs (optional): Additional arguments of
+            :class:`torch_geometric.nn.conv.MessagePassing`.
+    """
+    def __init__(self, nn: Callable, aggr: str = 'max', **kwargs):
+        super(EdgeConvWithEdgeAttribute, self).__init__(aggr=aggr, **kwargs)
+        self.nn = nn
+        # self.reset_parameters()
+
+    def forward(self, x: Union[Tensor, PairTensor], edge_index: Adj, edge_attr: Tensor) -> Tensor:
+        """"""
+        if isinstance(x, Tensor):
+            x: PairTensor = (x, x)
+        # propagate_type: (x: PairTensor)
+        return self.propagate(edge_index, x=x, edge_attr=edge_attr, size=None)
+
+
+    def message(self, x_i: Tensor, x_j: Tensor, edge_attr) -> Tensor:
+        return self.nn(torch.cat([x_i, x_j - x_i, edge_attr], dim=-1))
+
+    def __repr__(self):
+        return '{}(nn={})'.format(self.__class__.__name__, self.nn)
+
 
 class EmulsionConv(MessagePassing):
     def __init__(self, in_channels, out_channels, edge_dim=1, direction=0):
@@ -64,6 +112,7 @@ class EmulsionConv(MessagePassing):
         self.mp = nn.Sequential(
             nn.Linear(in_channels * 2 + edge_dim, out_channels),
             nn.ReLU()
+            #nn.BatchNorm1d(out_channels),  nn.Tanh()
         )
         self._direction = direction  # TODO: defines direction
 
@@ -156,19 +205,82 @@ class GraphNN_KNN_v1(nn.Module):
                 x = layer(x)
         return self.output(x)
 
+class GraphNN_KNN_v2(nn.Module):
+    def __init__(self,
+                 input_dim,
+                 hidden_dim,
+                 edge_dim=1,
+                 output_dim=10,
+                 num_layers_emulsion=3,
+                 num_layers_edge_conv=3,
+                 bias_init=0., **kwargs):
+        super().__init__()
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.edge_dim = edge_dim
+        previous_dim = input_dim
+        self._layers = nn.ModuleList()
+        for i in range(num_layers_emulsion):
+            self._layers.append(
+                nn.Sequential(nn.Linear(previous_dim, self.hidden_dim), nn.BatchNorm1d(self.hidden_dim),  nn.Tanh())
+            )
+            self._layers.append(
+                EmulsionConv(self.hidden_dim, self.hidden_dim, edge_dim=edge_dim)
+            )
+            previous_dim = self.hidden_dim
+
+        for i in range(num_layers_edge_conv):
+            if num_layers_emulsion == 0 and i == 0:
+                self._layers.append(
+                    nn.Sequential(nn.Linear(previous_dim, self.hidden_dim), nn.BatchNorm1d(self.hidden_dim), nn.Tanh())
+                )
+            self._layers.append(
+                # EdgeConvWithEdgeAttribute(Sequential(nn.Linear(2 * self.hidden_dim + self.edge_dim, self.hidden_dim)), 'max')
+                EdgeConvWithEdgeAttribute(Sequential(nn.Linear(2 * self.hidden_dim + self.edge_dim, self.hidden_dim), nn.BatchNorm1d(self.hidden_dim), nn.Tanh()), 'max')
+            )
+
+        self.output = nn.Linear(self.hidden_dim, output_dim)
+        # init_bias_model(self, b=0.)
+
+    def forward(self, data):
+        x, edge_index, orders, edge_features = data.x, data.edge_index, data.orders, data.edge_features
+        orders_preprocessed = data.orders_preprocessed[0]
+
+        x = self._layers[0](x)
+
+        for layer in self._layers[1:]:
+            if isinstance(layer, EmulsionConv):
+                layer = partial(layer, orders_preprocessed=orders_preprocessed)
+                x = checkpoint(layer,
+                               x,
+                               edge_index,
+                               orders,
+                               edge_features)
+            elif isinstance(layer, EdgeConvWithEdgeAttribute):
+                x = checkpoint(layer,
+                               x,
+                               edge_index,  edge_features)
+            else:
+                x = layer(x)
+        return self.output(x)
+
+
 
 class EdgeClassifier_v1(nn.Module):
-    def __init__(self, input_dim, hidden_dim=32, prior_proba=1. - 0.03, **kwargs):
+    def __init__(self, input_dim, hidden_dim=32, prior_proba=1. - 0.05, **kwargs):
         super().__init__()
         self._layers = nn.ModuleList([
             nn.Linear(input_dim, hidden_dim),
             nn.BatchNorm1d(hidden_dim),
+            # nn.Tanh(),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.BatchNorm1d(hidden_dim),
+            # nn.Tanh(),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
             nn.BatchNorm1d(hidden_dim),
+            # nn.Tanh(),
             nn.ReLU(),
             nn.Linear(hidden_dim, 1),
             nn.Sigmoid()
