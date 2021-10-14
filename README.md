@@ -20,7 +20,7 @@ The showers are generated using FairShip framework.
 
 ### Results
 
-The algorithm detects ~ 82% of Showers. The mean energy resolution is 27%. 
+The algorithm detects ~ 87% of Showers. The mean energy resolution is 0.101. 
 
 
 ## Running the code
@@ -48,6 +48,7 @@ cd data && python generator_rand.py --df_file ./showers_18k.csv \
 python preprocess_dataset.py --input_datafile ./rand_showers.pt \
 --output_datafile ./rand_preprocessed.pt
 ```
+The datafile can be accessed by <a href="https://doi.org/10.5281/zenodo.5570901"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.5570901.svg" alt="DOI"></a>.
 
 ### 2. Graph Neural Network training edge classifier
 
@@ -55,9 +56,9 @@ Next step is to train classier network, that is going to discriminated edges bet
 
 ```
 python training_classifier.py --datafile ../data/rand_preprocessed.pt --epochs 1000 --learning_rate 0.001 \
---num_layers_emulsion 3 --num_layers_edge_conv 5 \
---hidden_dim 32 --output_dim 32 --graph_embedder GraphNN_KNN_v1 --edge_classifier EdgeClassifier_v1 \
---project_name em_showers_network_training_updated --workspace ketrint  --outer_optimization true \
+--num_layers_emulsion 5 --num_layers_edge_conv 3 \
+--hidden_dim 32 --output_dim 32 --graph_embedder GraphNN_KNN_v2 --edge_classifier EdgeClassifier_v1 \
+--project_name em_showers_network_training --workspace YOUR_WORKSPACE_COMET_ML  --outer_optimization true \
 --use_scheduler false
 ```
 
@@ -67,9 +68,9 @@ Using networks weights from previous step we can perform clustering end estimate
 
 ```
 python clustering.py --datafile ../data/rand_preprocessed.pt \
---num_layers_edge_conv 5 --num_layers_emulsion 3 --threshold 0.2 --min_samples_core 4 \
---hidden_dim 32 --output_dim 32 --graph_embedder GraphNN_KNN_v1 --edge_classifier EdgeClassifier_v1 \
---project_name clustering --workspace ketrint --vanilla_hdbscan False \
+--num_layers_edge_conv 3 --num_layers_emulsion 5 --threshold 0.2 --min_samples_core 4 \
+--hidden_dim 32 --output_dim 32 --graph_embedder GraphNN_KNN_v2 --edge_classifier EdgeClassifier_v1 \
+--project_name clustering --workspace YOUR_WORKSPACE_COMET_ML --vanilla_hdbscan False \
 --graph_embedder_weights ../data/graph_embedder_rand_preprocessed_45959c8a2e3a4ec69eb31abfb5ad5f54.pt \
 --edge_classifier_weights ../data/edge_classifier_rand_preprocessed_45959c8a2e3a4ec69eb31abfb5ad5f54.pt \
 --energy_file ./E_pred.npy --energy_true_file ./E_true.npy --z_file ./data_new/z.npy
