@@ -62,6 +62,8 @@ python training_classifier.py --datafile ../data/rand_preprocessed.pt --epochs 1
 --use_scheduler false
 ```
 
+```Comet.ml```: https://www.comet.ml/ketrint/em-network-training-cv10/view/new/experiments 
+
 ### 3. Clustering of EM showers
 
 Using networks weights from previous step we can perform clustering end estimate quality:
@@ -75,6 +77,12 @@ python clustering.py --datafile ../data/rand_preprocessed.pt \
 --edge_classifier_weights ../data/edge_classifier_rand_preprocessed_45959c8a2e3a4ec69eb31abfb5ad5f54.pt \
 --energy_file ./E_pred.npy --energy_true_file ./E_true.npy --z_file ./data_new/z.npy
 ```
+```Comet.ml```
+
+*Clustering parameters choice*: https://www.comet.ml/ketrint/param-choice-10kcv/view/new/experiments
+*Clustering on test data*: https://www.comet.ml/ketrint/test-10kcv/view/new/experiments
+*Clustering on validation data*: https://www.comet.ml/ketrint/val-10kcv/view/new/experiments
+
 
 
 
