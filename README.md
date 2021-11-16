@@ -80,7 +80,9 @@ python clustering.py --datafile ../data/rand_preprocessed.pt \
 ```Comet.ml```
 
 *Clustering parameters choice*: https://www.comet.ml/ketrint/param-choice-10kcv/view/new/experiments
+
 *Clustering on test data*: https://www.comet.ml/ketrint/test-10kcv/view/new/experiments
+
 *Clustering on validation data*: https://www.comet.ml/ketrint/val-10kcv/view/new/experiments
 
 
