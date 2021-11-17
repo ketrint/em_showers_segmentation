@@ -395,14 +395,15 @@ def calc_clustering_metrics(clusterized_bricks, experiment, energy_true_file, en
    # r.fit(X=E_raw.reshape((-1, 1)), y=E_true)
   #  E_pred = r.predict(E_raw.reshape((-1, 1)))
 
-    scale_mm = 10000
+    scale_cm_millimeters = 10
+    scale_cm_micrometers = 10000
     #print('Energy resolution = {}'.format(np.std((E_true - E_pred) / E_true)))
     print()
     print('Track efficiency = {}'.format(selected_tracks / total_tracks))
     print()
     print('Good showers = {}'.format(number_of_good_showers / total_number_of_showers))
- 
-    experiment.log_metric('Energy resolution', (np.mean(ER_full)))
+
+    #experiment.log_metric('Energy resolution', (np.mean(ER_full)))
     print()
     #experiment.log_metric('Track efficiency', (selected_tracks / total_tracks))
     print('Broken showers', (number_of_broken_showers / total_number_of_showers))
@@ -413,12 +414,9 @@ def calc_clustering_metrics(clusterized_bricks, experiment, energy_true_file, en
     experiment.log_metric('Broken showers', (number_of_broken_showers / total_number_of_showers))
     experiment.log_metric('Lost showers', ((number_of_lost_showers+number_of_E_lost_showers) / total_number_of_showers))
     print()
-    experiment.log_metric('MAE for x', (np.abs((x_raw * scale_mm - x_true) / scale_mm).mean()))
-    experiment.log_metric('MAE for y', (np.abs((y_raw * scale_mm - y_true) / scale_mm).mean()))
-    experiment.log_metric('MAE for z', (np.abs((z_raw * scale_mm - z_true) / scale_mm).mean()))
-    print()
-    experiment.log_metric('MAE for tx', (np.abs((tx_raw - tx_true)).mean()))
-    experiment.log_metric('MAE for ty', (np.abs((ty_raw - ty_true)).mean()))
+    experiment.log_metric('MAE for x', (np.abs((x_raw * scale_cm_millimeters - x_true) / scale_cm_micrometers).mean()))
+    experiment.log_metric('MAE for y', (np.abs((y_raw * scale_cm_millimeters - y_true) / scale_cm_micrometers).mean()))
+    experiment.log_metric('MAE for z', (np.abs((z_raw * scale_cm_millimeters - z_true) / scale_cm_micrometers).mean()))
 
 
 
