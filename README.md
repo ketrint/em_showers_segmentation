@@ -1,4 +1,4 @@
-[![DOI](https://doi.org/10.1088/1748-0221/16/12/P12035)
+[![DOI](https://doi.org/10.1088/1748-0221/16/12/P12035)]
 
 # Reconstruction of 3D Shower Structures for Neutrino Experiments
 
